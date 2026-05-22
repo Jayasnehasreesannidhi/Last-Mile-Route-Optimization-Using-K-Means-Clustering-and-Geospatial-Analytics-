@@ -18,6 +18,7 @@ This project uses the publicly available Amazon Last Mile Routing Research Chall
 
 Dataset Source:
 Amazon Last Mile Routing Research Challenge Dataset
+https://registry.opendata.aws/amazon-last-mile-challenges/
 
 Dataset Includes
 Real-world Amazon delivery routes
@@ -29,6 +30,7 @@ Chicago
 Seattle
 Boston
 Austin
+
 Technologies & Tools
 Python
 Pandas
@@ -39,3 +41,37 @@ Seaborn
 OR-Tools
 Geopandas
 Jupyter Notebook
+
+Methodology
+
+The project follows a multi-stage analytical workflow:
+
+Data Cleaning & Preprocessing
+Removed invalid GPS coordinates
+Eliminated duplicate stops
+Filtered incomplete routes
+Removed extreme distance outliers
+Geospatial Analysis
+Mapped delivery stop distributions
+Compared delivery density between cities
+K-Means Clustering
+Identified natural delivery territories
+Evaluated cluster quality using Elbow Method and Silhouette Score
+Route Efficiency Analysis
+Compared average route distance across cities
+Evaluated stop-per-route distributions
+Emissions Modeling
+Estimated CO₂ emissions using EPA SmartWay conversion factors
+Measured environmental impact of routing inefficiency
+
+Key Findings
+K-Means clustering identified delivery territories with a silhouette score of 0.96, indicating extremely strong geographic separation.
+Boston routes were approximately 59% longer than Los Angeles routes despite similar delivery workloads.
+Longer route distances directly increased fuel usage and CO₂ emissions.
+Los Angeles achieved the shortest average route distances despite having the highest delivery volume, demonstrating the importance of delivery density and route structure.
+Amazon’s delivery operations showed highly standardized stop distributions, meaning optimization improvements can scale consistently across the network.
+
+Authors
+
+Jayasnehasree Sannidhi
+Ram Saran Venkatasalapathy

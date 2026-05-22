@@ -10,6 +10,7 @@ This project analyzes inefficiencies in last-mile delivery operations using real
 
 Using data-driven optimization techniques such as K-Means clustering, geospatial analysis, route distance evaluation, and CO₂ emissions modeling, the project identifies major inefficiencies across multiple US metropolitan delivery regions and proposes actionable optimization strategies.
 
+Link to the website : https://lastmile-dashboard.vercel.app/dashboard.html
 ---
 
 # Objectives

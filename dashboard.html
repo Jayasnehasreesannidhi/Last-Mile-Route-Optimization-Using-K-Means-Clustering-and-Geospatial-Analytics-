@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Last-Mile Route Optimization — Analytics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root[data-theme="dark"] {
+  --bg: #080807;
+  --surface: #100f0d;
+  --surface2: #151310;
+  --surface3: #1a1815;
+  --border: #1e1c18;
+  --border2: #252320;
+  --text: #f5f2ed;
+  --text2: #a89880;
+  --muted: #5a5248;
+  --faint: #2a2820;
+  --copper: #b87333;
+  --copper2: #d4a96a;
+  --copper3: #8a6835;
+  --copper-dim: #1a1208;
+  --green: #5cb88a;
+  --green-dim: #0a1a10;
+  --red: #d97070;
+  --red-dim: #1f0d0d;
+  --blue: #7ab0d4;
+  --sidebar-w: 220px;
+  --topbar-h: 52px;
+}
+:root[data-theme="light"] {
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --surface2: #f5f1eb;
+  --surface3: #ede8df;
+  --border: #e0d8cc;
+  --border2: #cec5b5;
+  --text: #1a1510;
+  --text2: #6b5c48;
+  --muted: #9a8a78;
+  --faint: #e8e0d4;
+  --copper: #a0622a;
+  --copper2: #b87333;
+  --copper3: #7a4820;
+  --copper-dim: #fdf0e4;
+  --green: #2e7d55;
+  --green-dim: #eaf5ef;
+  --red: #c0392b;
+  --red-dim: #fdf0ef;
+  --blue: #2563a8;
+  --sidebar-w: 220px;
+  --topbar-h: 52px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { background: var(--bg); font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: 15px; line-height: 1.65; color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+/* TOPBAR */
+.topbar { position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 100; }
+.logo-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo { width: 28px; height: 28px; background: var(--copper); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+.logo-brand { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.logo-text { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 340px; }
+.logo-sub { font-size: 12px; color: var(--muted); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 340px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.chip { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); font-size: 12px; padding: 5px 11px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.chip-live { background: var(--green-dim); border: 1px solid var(--green); color: var(--green); font-size: 11px; padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+.dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.theme-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: all 0.2s; }
+.theme-toggle:hover { border-color: var(--copper); color: var(--copper); }
+
+/* SIDEBAR */
+.sidebar { position: fixed; top: var(--topbar-h); left: 0; width: var(--sidebar-w); height: calc(100vh - var(--topbar-h)); background: var(--surface); border-right: 1px solid var(--border); padding: 16px 10px; overflow-y: auto; z-index: 200; pointer-events: auto; }
+.nav-section { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 14px 10px 6px; font-weight: 600; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--text2); cursor: pointer; margin-bottom: 2px; transition: all 0.15s; user-select: none; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--copper-dim); color: var(--copper); border: 1px solid var(--copper3); }
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--surface3); border-radius: 4px; font-size: 10px; padding: 2px 7px; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+
+/* MAIN */
+.main { margin-left: var(--sidebar-w); padding-top: var(--topbar-h); min-height: 100vh; height: calc(100vh - var(--topbar-h)); overflow-y: auto; }
+.content { padding: 28px 28px; }
+.page-header { margin-bottom: 24px; display: flex; align-items: flex-end; justify-content: space-between; }
+.page-title { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; }
+.page-desc { font-size: 15px; color: var(--text2); margin-top: 6px; line-height: 1.5; max-width: 640px; }
+.page-date { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+/* METRIC CARDS */
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.mc { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; transition: border-color 0.2s; }
+.mc:hover { border-color: var(--border2); }
+.mc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.mc-label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.mc-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.mc-val { font-size: 28px; font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; font-family: 'JetBrains Mono', monospace; }
+.mc-sub { font-size: 13px; color: var(--text2); margin-top: 6px; }
+.mc-change { font-size: 12px; margin-top: 10px; display: flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+
+/* CHART CARDS */
+.chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.chart-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.chart-title { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+.chart-sub { font-size: 14px; color: var(--text2); margin-bottom: 16px; line-height: 1.55; }
+.chart-tag { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); font-size: 11px; padding: 3px 9px; border-radius: 5px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.li { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); }
+.ld { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+/* PROGRESS BARS */
+.prog-wrap { margin-bottom: 10px; }
+.prog-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+.prog-track { background: var(--surface3); border-radius: 3px; height: 4px; }
+.prog-fill { height: 4px; border-radius: 3px; transition: width 0.6s ease; }
+
+/* INSIGHT CARDS */
+.insight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.insight-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.insight-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.insight-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.insight-body { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+/* STAT TABLE */
+.stat-table { width: 100%; border-collapse: collapse; }
+.stat-table th { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-weight: 600; }
+.stat-table td { font-size: 14px; padding: 12px 12px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.stat-table tr:last-child td { border-bottom: none; }
+.stat-table tr:hover td { background: var(--surface2); }
+.stat-city-name { font-weight: 500; color: var(--text); }
+.pill { display: inline-block; padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+.pill-green { background: var(--green-dim); color: var(--green); }
+.pill-red { background: var(--red-dim); color: var(--red); }
+.pill-neutral { background: var(--surface2); color: var(--muted); }
+
+/* SECTION LABEL */
+.section-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 14px; }
+.divider { height: 1px; background: var(--border); margin: 4px 0 20px; }
+
+/* CLUSTER VIZ */
+.cluster-zones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.zone-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 7px 13px; font-size: 13px; color: var(--text2); display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.zone-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* WHAT-IF */
+.whatif-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.whatif-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start; }
+.whatif-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.whatif-val { font-size: 30px; font-weight: 700; letter-spacing: -0.04em; color: var(--copper); font-family: 'JetBrains Mono', monospace; }
+.whatif-sub { font-size: 13px; color: var(--text2); margin-top: 6px; }
+.whatif-sep { width: 1px; background: var(--border); align-self: stretch; }
+input[type=range] { width: 100%; accent-color: var(--copper); cursor: pointer; margin-top: 4px; }
+
+/* Full-page analysis — all sections visible, sidebar scrolls to each */
+a.nav-item { text-decoration: none; color: inherit; }
+.view-panel {
+  display: block;
+  scroll-margin-top: 72px;
+  padding-bottom: 48px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.view-panel:last-of-type { border-bottom: none; padding-bottom: 24px; }
+.panel-heading {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+  padding-top: 8px;
+}
+.panel-heading-desc {
+  font-size: 15px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 20px;
+  max-width: 720px;
+}
+.scroll-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.scroll-hint svg { width: 14px; height: 14px; opacity: 0.7; }
+
+.map-frame-wrap { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface2); height: min(72vh, 680px); min-height: 480px; }
+.map-frame-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+.map-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.map-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text2); background: var(--surface2); border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px; }
+.map-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+.export-btn { background: var(--copper); color: #fff; border: none; padding: 11px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.2s; }
+.export-btn:hover { opacity: 0.9; }
+.export-btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.export-btn:disabled { opacity: 0.6; cursor: wait; }
+
+/* Print layout (@media print + body.pdf-export for Print / Save as PDF) */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm;
+  }
+
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: var(--bg) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .topbar,
+  .sidebar {
+    display: none !important;
+  }
+
+  .main {
+    margin-left: 0 !important;
+    padding-top: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .content {
+    padding: 12px 16px !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .page-desc,
+  .panel-heading-desc {
+    max-width: none !important;
+  }
+
+  .page-header {
+    break-after: avoid;
+    page-break-after: avoid;
+    margin-bottom: 16px;
+  }
+
+  .scroll-hint {
+    display: none !important;
+  }
+
+  .view-panel {
+    display: block !important;
+    scroll-margin-top: 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+    margin-bottom: 0;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .view-panel + .view-panel {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .view-panel:last-of-type {
+    border-bottom: none;
+  }
+
+  .panel-heading {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .metrics,
+  .chart-grid-2,
+  .chart-grid-3,
+  .insight-grid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .chart-grid-2,
+  .chart-grid-3,
+  .insight-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mc,
+  .chart-card,
+  .insight-card,
+  .whatif-card,
+  .map-frame-wrap {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .chart-card canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .map-frame-wrap {
+    height: 320px !important;
+    min-height: 280px !important;
+    max-height: 320px !important;
+  }
+
+  .export-btn {
+    display: none !important;
+  }
+}
+
+body.pdf-export {
+  overflow: visible !important;
+}
+
+body.pdf-export .topbar,
+body.pdf-export .sidebar {
+  display: none !important;
+}
+
+body.pdf-export .main {
+  margin-left: 0 !important;
+  padding-top: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  position: static !important;
+  width: 100% !important;
+}
+
+body.pdf-export .content {
+  padding: 16px 20px !important;
+  overflow: visible !important;
+}
+
+body.pdf-export .scroll-hint {
+  display: none !important;
+}
+
+body.pdf-export .view-panel {
+  scroll-margin-top: 0;
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+body.pdf-export .view-panel + .view-panel {
+  break-before: page;
+  page-break-before: always;
+}
+
+body.pdf-export .metrics,
+body.pdf-export .chart-grid-2,
+body.pdf-export .chart-grid-3,
+body.pdf-export .insight-grid,
+body.pdf-export .mc,
+body.pdf-export .chart-card,
+body.pdf-export .insight-card,
+body.pdf-export .whatif-card,
+body.pdf-export .map-frame-wrap {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+body.pdf-export .metrics {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+body.pdf-export .chart-grid-2,
+body.pdf-export .chart-grid-3,
+body.pdf-export .insight-grid {
+  grid-template-columns: 1fr !important;
+}
+
+body.pdf-export .map-frame-wrap {
+  height: 320px !important;
+  min-height: 280px !important;
+  max-height: 320px !important;
+}
+
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo-wrap">
+    <div class="logo">LM</div>
+    <div class="logo-brand">
+      <span class="logo-text">Last-Mile Route Optimization</span>
+      <span class="logo-sub">K-Means Clustering &amp; Geospatial Analytics</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="chip">Amazon × MIT · 2018</span>
+    <span class="chip">5 Metro Areas</span>
+    <span class="chip-live"><span class="dot-live"></span>898K stops analyzed</span>
+    <button class="theme-toggle" id="theme-toggle" type="button" title="Toggle theme">☀</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="nav-section">Overview</div>
+  <a href="#view-dashboard" class="nav-item active" data-view="dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard <span class="nav-badge">6.1K</span>
+  </a>
+  <a href="#view-routes" class="nav-item" data-view="routes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    Routes
+  </a>
+  <a href="#view-emissions" class="nav-item" data-view="emissions">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg>
+    Emissions
+  </a>
+  <div class="nav-section">Analysis</div>
+  <a href="#view-clustering" class="nav-item" data-view="clustering">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 10.5l6-3M9 13.5l6 3"/></svg>
+    Clustering <span class="nav-badge">K=5</span>
+  </a>
+  <a href="#view-optimizer" class="nav-item" data-view="optimizer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+    Optimizer
+  </a>
+  <a href="#view-cities" class="nav-item" data-view="cities">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.97 0-9-4.03-9-9s4.03-9 9-9 9 4.03 9 9-4.03 9-9 9z"/><path d="M12 7v5l3 3"/></svg>
+    Cities
+  </a>
+  <div class="nav-section">Interactive</div>
+  <a href="#view-interactive" class="nav-item" data-view="interactive">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/></svg>
+    Interactive App <span class="nav-badge">Map</span>
+  </a>
+  <div class="nav-section">Reports</div>
+  <a href="#view-insights" class="nav-item" data-view="insights">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+    Insights
+  </a>
+  <a href="#view-export" class="nav-item" data-view="export">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    Export
+  </a>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+  <div class="content">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="page-title">Last-Mile Route Optimization Analysis</div>
+        <div class="page-desc" id="page-desc">Full Hack Report — Amazon × MIT dataset · 898,415 stops · 6,112 routes · 5 U.S. metros</div>
+        <div class="scroll-hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          Scroll for the complete analysis, or use the sidebar to jump to a section
+        </div>
+      </div>
+      <div class="page-date">Hack Report · May 2026</div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard" class="view-panel">
+    <h2 class="panel-heading">Dashboard</h2>
+    <p class="panel-heading-desc">Project overview, dataset context, and key performance metrics from the cleaned Amazon last-mile data.</p>
+
+    <!-- REPORT CONTEXT -->
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title" style="margin-bottom:4px">Project overview</div>
+      <div class="chart-sub">Last-mile delivery accounts for ~53% of total shipping costs. This analysis uses real Amazon delivery data (2018) across five US metros to improve routing efficiency, reduce operational cost, and lower emissions.</div>
+      <div style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Dataset</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">Amazon × MIT Last Mile Routing Challenge — GPS coordinates, route records, stop-level delivery details</div>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Methods</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">7-step cleaning pipeline · K-Means (50K sample) · Elbow &amp; Silhouette · OR-Tools · EPA SmartWay 0.21 kg CO₂/km</div>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Metros</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">Los Angeles, CA · Chicago, IL · Seattle, WA · Boston, MA · Austin, TX</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- METRIC CARDS -->
+    <div class="metrics">
+      <div class="mc">
+        <div class="mc-top">
+          <div class="mc-label">Total stops</div>
+          <div class="mc-icon" style="background:var(--copper-dim)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+        </div>
+        <div class="mc-val" style="color:var(--copper)">898,415</div>
+        <div class="mc-sub">across 5 metro areas</div>
+        <div class="mc-change" style="color:var(--text2)">6,112 routes processed</div>
+      </div>
+      <div class="mc">
+        <div class="mc-top">
+          <div class="mc-label">Avg stops / route</div>
+          <div class="mc-icon" style="background:var(--surface2)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          </div>
+        </div>
+        <div class="mc-val" style="color:var(--text)">146.7</div>
+        <div class="mc-sub">std dev ± 31 stops</div>
+        <div class="mc-change" style="color:var(--muted)">range 32 – 237</div>
+      </div>
+      <div class="mc">
+        <div class="mc-top">
+          <div class="mc-label">Best efficiency</div>
+          <div class="mc-icon" style="background:var(--green-dim)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
+        </div>
+        <div class="mc-val" style="color:var(--green)">188.3 km</div>
+        <div class="mc-sub">Los Angeles avg route</div>
+        <div class="mc-change" style="color:var(--green)">~110 km less than Boston per route</div>
+      </div>
+      <div class="mc">
+        <div class="mc-top">
+          <div class="mc-label">CO₂ gap / route</div>
+          <div class="mc-icon" style="background:var(--red-dim)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+        </div>
+        <div class="mc-val" style="color:var(--red)">23.2 kg</div>
+        <div class="mc-sub">Boston vs Los Angeles</div>
+        <div class="mc-change" style="color:var(--red)">↓ 59% emissions inefficiency</div>
+      </div>
+    </div>
+
+    </div><!-- /view-dashboard -->
+
+    <!-- ROUTES -->
+    <div id="view-routes" class="view-panel">
+    <h2 class="panel-heading">Routes</h2>
+    <p class="panel-heading-desc">Data cleaning pipeline and the distribution of stops per route across 6,112 delivery routes.</p>
+    <div class="section-label">Data cleaning pipeline</div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title" style="margin-bottom:4px">7-step preprocessing</div>
+      <div class="chart-sub">Raw millions of GPS records → 898,415 valid stops across 6,112 complete routes</div>
+      <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px">
+        <span class="chip">Depot-only records removed</span>
+        <span class="chip">Duplicate stops removed</span>
+        <span class="chip">Missing GPS dropped</span>
+        <span class="chip">Invalid (0,0) coords removed</span>
+        <span class="chip">Outside continental US filtered</span>
+        <span class="chip">Unidentified city codes removed</span>
+        <span class="chip">Routes &lt;3 stops removed</span>
+        <span class="chip">Extreme outlier distances removed</span>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title">Distribution of stops per route</div>
+          <div class="chart-sub">Near-normal bell curve centered at 146.7 — highly standardized operations</div>
+        </div>
+        <span class="chart-tag">6,112 routes</span>
+      </div>
+      <div style="position:relative;height:220px">
+        <canvas id="distroChart" role="img" aria-label="Histogram of stops per route distribution"></canvas>
+      </div>
+    </div>
+    </div><!-- /view-routes -->
+
+    <!-- CITIES -->
+    <div id="view-cities" class="view-panel">
+    <h2 class="panel-heading">Cities</h2>
+    <p class="panel-heading-desc">Delivery volume, route distance, and side-by-side comparison for all five metropolitan areas.</p>
+    <div class="section-label">City performance</div>
+    <div class="chart-grid-2">
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">Delivery stops by city</div>
+            <div class="chart-sub">LA ~411,552 (46%) · Chicago ~161K · Seattle ~154K · Boston ~140K · Austin ~31K</div>
+          </div>
+          <span class="chart-tag">Volume</span>
+        </div>
+        <div class="legend">
+          <span class="li"><span class="ld" style="background:#b87333"></span>Los Angeles</span>
+          <span class="li"><span class="ld" style="background:#7ab0d4"></span>Chicago</span>
+          <span class="li"><span class="ld" style="background:#5cb88a"></span>Seattle</span>
+          <span class="li"><span class="ld" style="background:#d4a96a"></span>Boston</span>
+          <span class="li"><span class="ld" style="background:#a89880"></span>Austin</span>
+        </div>
+        <div style="position:relative;height:220px">
+          <canvas id="stopsChart" role="img" aria-label="Bar chart of delivery stops by city">LA:411552, Chicago:161408, Seattle:154702, Boston:139693, Austin:31060</canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">Average route distance</div>
+            <div class="chart-sub">Per city — same stops, very different distances</div>
+          </div>
+          <span class="chart-tag">km</span>
+        </div>
+        <div class="legend">
+          <span class="li"><span class="ld" style="background:#5cb88a"></span>Efficient</span>
+          <span class="li"><span class="ld" style="background:#d97070"></span>Inefficient</span>
+        </div>
+        <div style="position:relative;height:220px">
+          <canvas id="distChart" role="img" aria-label="Bar chart of avg route distance by city">LA:188.3, Seattle:196.2, Austin:249.6, Chicago:283.9, Boston:298.8</canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOLUME SHARE + TABLE -->
+    <div class="chart-grid-2">
+      <div class="chart-card">
+        <div class="chart-title" style="margin-bottom:4px">Delivery volume share</div>
+        <div class="chart-sub">% of total 898,415 stops</div>
+        <div style="margin-top:14px">
+          <div class="prog-wrap">
+            <div class="prog-label"><span>Los Angeles</span><span style="color:var(--copper);font-family:'JetBrains Mono',monospace">45.8%</span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:45.8%;background:#b87333"></div></div>
+          </div>
+          <div class="prog-wrap">
+            <div class="prog-label"><span>Chicago</span><span style="color:var(--blue);font-family:'JetBrains Mono',monospace">18.0%</span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:18%;background:#7ab0d4"></div></div>
+          </div>
+          <div class="prog-wrap">
+            <div class="prog-label"><span>Seattle</span><span style="color:var(--green);font-family:'JetBrains Mono',monospace">17.2%</span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:17.2%;background:#5cb88a"></div></div>
+          </div>
+          <div class="prog-wrap">
+            <div class="prog-label"><span>Boston</span><span style="color:var(--copper2);font-family:'JetBrains Mono',monospace">15.5%</span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:15.5%;background:#d4a96a"></div></div>
+          </div>
+          <div class="prog-wrap">
+            <div class="prog-label"><span>Austin</span><span style="color:var(--muted);font-family:'JetBrains Mono',monospace">3.5%</span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:3.5%;background:#a89880"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title" style="margin-bottom:4px">City comparison table</div>
+        <div class="chart-sub">All key metrics side by side</div>
+        <div style="margin-top:12px;overflow-x:auto">
+          <table class="stat-table">
+            <thead>
+              <tr>
+                <th>City</th>
+                <th>Stops</th>
+                <th>Avg km</th>
+                <th>CO₂ kg</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="stat-city-name">Los Angeles</span></td>
+                <td>411,552</td>
+                <td>188.3</td>
+                <td>39.5</td>
+                <td><span class="pill pill-green">Efficient</span></td>
+              </tr>
+              <tr>
+                <td><span class="stat-city-name">Seattle</span></td>
+                <td>154,702</td>
+                <td>196.2</td>
+                <td>41.2</td>
+                <td><span class="pill pill-green">Efficient</span></td>
+              </tr>
+              <tr>
+                <td><span class="stat-city-name">Austin</span></td>
+                <td>31,060</td>
+                <td>249.6</td>
+                <td>52.4</td>
+                <td><span class="pill pill-neutral">Moderate</span></td>
+              </tr>
+              <tr>
+                <td><span class="stat-city-name">Chicago</span></td>
+                <td>161,408</td>
+                <td>283.9</td>
+                <td>59.6</td>
+                <td><span class="pill pill-red">Inefficient</span></td>
+              </tr>
+              <tr>
+                <td><span class="stat-city-name">Boston</span></td>
+                <td>139,693</td>
+                <td>298.8</td>
+                <td>62.7</td>
+                <td><span class="pill pill-red">Inefficient</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    </div><!-- /view-cities -->
+
+    <!-- EMISSIONS -->
+    <div id="view-emissions" class="view-panel">
+    <h2 class="panel-heading">Emissions</h2>
+    <p class="panel-heading-desc">CO₂ impact per route by city using EPA SmartWay emission factors.</p>
+    <div class="section-label">Environmental impact</div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title">CO₂ emissions per route</div>
+          <div class="chart-sub">EPA SmartWay factor · 0.21 kg CO₂ per km — Boston emits 59% more than LA</div>
+        </div>
+        <span class="chart-tag">kg/route</span>
+      </div>
+      <div class="legend">
+        <span class="li"><span class="ld" style="background:#5cb88a"></span>Low</span>
+        <span class="li"><span class="ld" style="background:#d4a96a"></span>Medium</span>
+        <span class="li"><span class="ld" style="background:#d97070"></span>High</span>
+      </div>
+      <div style="position:relative;height:280px">
+        <canvas id="co2Chart" role="img" aria-label="Bar chart of CO2 emissions per route by city">LA:39.5, Seattle:41.2, Austin:52.4, Chicago:59.6, Boston:62.7</canvas>
+      </div>
+    </div>
+    <div class="insight-grid" style="margin-bottom:16px">
+      <div class="insight-card">
+        <div class="insight-title">Los Angeles — 39.5 kg/route</div>
+        <div class="insight-body">Lowest emissions despite highest delivery volume (411,552 stops).</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-title">Boston — 62.7 kg/route</div>
+        <div class="insight-body">~23.2 kg more CO₂ per route than LA. Routing improvements alone can cut this without new EVs.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-title">Chicago — 59.6 kg/route</div>
+        <div class="insight-body">Second-highest emissions, aligned with long average route distance (283.9 km).</div>
+      </div>
+    </div>
+    </div><!-- /view-emissions -->
+
+    <!-- OPTIMIZER -->
+    <div id="view-optimizer" class="view-panel">
+    <h2 class="panel-heading">Optimizer</h2>
+    <p class="panel-heading-desc">What-if calculator — estimate savings if Boston routes matched Los Angeles efficiency.</p>
+    <div class="section-label">Optimization simulator</div>
+    <div class="whatif-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div class="chart-title">What-if savings calculator</div>
+          <div class="chart-sub">If Boston routes matched LA efficiency, how much would be saved?</div>
+        </div>
+        <span class="chart-tag">Interactive</span>
+      </div>
+      <div style="margin-bottom:16px">
+        <div class="whatif-label">Route optimization level: <span id="opt-pct" style="color:var(--copper)">50%</span></div>
+        <input type="range" min="0" max="100" value="50" id="opt-slider">
+      </div>
+      <div class="whatif-row">
+        <div>
+          <div class="whatif-label">Distance saved per route</div>
+          <div class="whatif-val" id="dist-saved">55.3 km</div>
+          <div class="whatif-sub">out of 110.5 km excess</div>
+        </div>
+        <div class="whatif-sep"></div>
+        <div>
+          <div class="whatif-label">CO₂ saved per route</div>
+          <div class="whatif-val" id="co2-saved">11.6 kg</div>
+          <div class="whatif-sub">out of 23.2 kg excess</div>
+        </div>
+        <div class="whatif-sep"></div>
+        <div>
+          <div class="whatif-label">Fleet annual CO₂ savings</div>
+          <div class="whatif-val" id="annual-saved">70.9K kg</div>
+          <div class="whatif-sub">across ~6,112 Boston routes/yr</div>
+        </div>
+      </div>
+    </div>
+    </div><!-- /view-optimizer -->
+
+    <!-- CLUSTERING -->
+    <div id="view-clustering" class="view-panel">
+    <h2 class="panel-heading">Clustering</h2>
+    <p class="panel-heading-desc">K-Means zone identification, silhouette validation, and delivery territory analysis.</p>
+    <div class="section-label">K-Means analysis</div>
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title">K-Means silhouette score</div>
+          <div class="chart-sub">Peaks at K=5 with score 0.96 — optimal clusters</div>
+        </div>
+        <span class="chart-tag">Clustering</span>
+      </div>
+      <div class="legend">
+        <span class="li"><span class="ld" style="background:#b87333"></span>Silhouette score</span>
+        <span class="li"><span class="ld" style="background:#5cb88a"></span>Optimal (K=5)</span>
+      </div>
+      <div style="position:relative;height:220px">
+        <canvas id="silChart" role="img" aria-label="Line chart of silhouette scores for K values 2 to 10">K2:0.71,K3:0.88,K4:0.89,K5:0.96,K6:0.65,K7:0.62,K8:0.61,K9:0.61,K10:0.61</canvas>
+      </div>
+    </div>
+
+    <!-- CLUSTERING EVALUATION -->
+    <div class="chart-grid-2">
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">Elbow method — inertia</div>
+            <div class="chart-sub">Steep drop K=2→5, then flattens — diminishing returns beyond 5 clusters</div>
+          </div>
+          <span class="chart-tag">K-Means</span>
+        </div>
+        <div style="position:relative;height:220px">
+          <canvas id="elbowChart" role="img" aria-label="Elbow method inertia by K value"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title" style="margin-bottom:4px">Clustering validation (report)</div>
+        <div class="chart-sub">Both methods confirm optimal K = 5, matching the five metro regions</div>
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="padding:14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Elbow method</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.65">Inertia drops sharply between K=2 and K=5, then improvement flattens significantly.</div>
+          </div>
+          <div style="padding:14px;background:var(--green-dim);border-radius:8px;border:1px solid var(--green)">
+            <div style="font-size:10px;color:var(--green);margin-bottom:6px">Silhouette score</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.65">Peaks at <strong style="color:var(--green)">0.96</strong> for K=5 — exceptionally high for real-world geospatial clustering. Declines sharply beyond K=5.</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">K-Means on 50,000 random delivery coordinates separated five perfectly distinct geographic zones with essentially zero overlap between metros.</div>
+      </div>
+    </div>
+
+    <!-- CLUSTERING ZONES -->
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title" style="margin-bottom:4px">K-Means delivery zones</div>
+      <div class="chart-sub">5 clusters identified with silhouette score 0.96 — zero overlap between metro regions</div>
+      <div class="cluster-zones">
+        <div class="zone-chip"><span class="zone-dot" style="background:#b87333"></span>Zone 1 — Los Angeles</div>
+        <div class="zone-chip"><span class="zone-dot" style="background:#7ab0d4"></span>Zone 2 — Chicago</div>
+        <div class="zone-chip"><span class="zone-dot" style="background:#5cb88a"></span>Zone 3 — Seattle</div>
+        <div class="zone-chip"><span class="zone-dot" style="background:#d4a96a"></span>Zone 4 — Boston</div>
+        <div class="zone-chip"><span class="zone-dot" style="background:#a89880"></span>Zone 5 — Austin</div>
+      </div>
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;font-weight:500">Cluster quality metrics</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Optimal K</div><div style="font-size:16px;font-weight:600;color:var(--copper);font-family:'JetBrains Mono',monospace">K = 5</div></div>
+          <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Silhouette score</div><div style="font-size:16px;font-weight:600;color:var(--green);font-family:'JetBrains Mono',monospace">0.96</div></div>
+          <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Cluster overlap</div><div style="font-size:16px;font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace">~0%</div></div>
+          <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Sample size</div><div style="font-size:16px;font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace">50K</div></div>
+        </div>
+      </div>
+    </div>
+    </div><!-- /view-clustering -->
+
+    <!-- INSIGHTS -->
+    <div id="view-insights" class="view-panel">
+    <h2 class="panel-heading">Insights</h2>
+    <p class="panel-heading-desc">Key findings, strategic recommendations, and overall conclusions from the Hack Report.</p>
+    <div class="section-label" style="margin-top:4px">Key insights</div>
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--red-dim)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="insight-title">Boston is 59% less efficient</div>
+        <div class="insight-body">Drivers travel ~110 km more per route than LA while completing the same number of stops — driven by historic road layouts and water barriers.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--green-dim)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 22c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9 4.03 9 9 9z"/><path d="M12 8v4l3 3"/></svg>
+        </div>
+        <div class="insight-title">No new EVs needed</div>
+        <div class="insight-body">Boston produces 23.2 kg more CO₂ per route than LA. Better routing alone — no new vehicles or infrastructure — can substantially cut emissions.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--copper-dim)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
+        </div>
+        <div class="insight-title">Clustering score of 0.96</div>
+        <div class="insight-body">K-Means perfectly identified all 5 metro zones with near-zero cluster overlap — validating automated territory design over manual boundaries.</div>
+      </div>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div class="section-label" style="margin-top:4px">Recommendations</div>
+    <div class="insight-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--red-dim)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="insight-title">1. Prioritize Boston</div>
+        <div class="insight-body">Highest avg route distance (298.8 km) and CO₂ (62.7 kg/route). Redesign territories, improve stop sequencing, optimize depot coverage.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--green-dim)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+        </div>
+        <div class="insight-title">2. Benchmark Los Angeles</div>
+        <div class="insight-body">Highest volume (411,552 stops) yet shortest routes (188.3 km). Use LA as the efficiency benchmark for other metros.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--copper-dim)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--copper)" stroke-width="2"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/></svg>
+        </div>
+        <div class="insight-title">3. Expand clustering</div>
+        <div class="insight-body">Natural delivery zones emerge from stop coordinates (silhouette 0.96). Use clustering for territory design instead of static admin boundaries.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--surface2)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="insight-title">4. Improve Austin depots</div>
+        <div class="insight-body">Lowest volume (31,060 stops) with high route distance (249.6 km). Reposition fulfillment hubs to reduce travel as demand grows.</div>
+      </div>
+    </div>
+
+    <!-- OVERALL FINDINGS -->
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title" style="margin-bottom:4px">Overall findings</div>
+      <div class="chart-sub">Key conclusions from the Hack Report analysis</div>
+      <ul style="margin-top:12px;padding-left:18px;font-size:12px;color:var(--text2);line-height:1.85">
+        <li>Geographic clustering is highly effective — K=5 with silhouette 0.96 validates automated territory planning.</li>
+        <li>Route inefficiency varies substantially by city — Boston routes are ~59% longer than LA with nearly identical stop counts (~146.7).</li>
+        <li>CO₂ emissions track routing efficiency — Boston emits ~23.2 kg more CO₂ per route than LA (59% higher).</li>
+        <li>Operations are highly standardized — bell curve centered at 146.7 stops (σ ±31), so optimization scales predictably fleet-wide.</li>
+        <li>Delivery density improves efficiency — LA’s high volume still yields the shortest average route distance when properly optimized.</li>
+      </ul>
+    </div>
+    </div><!-- /view-insights -->
+
+    <!-- INTERACTIVE APP -->
+    <div id="view-interactive" class="view-panel">
+    <h2 class="panel-heading">Interactive App</h2>
+    <p class="panel-heading-desc">Explore K-Means delivery clusters on an interactive dark map — zoom, pan, and click stops for details.</p>
+      <div class="section-label">Interactive geospatial app</div>
+      <div class="chart-card" style="margin-bottom:16px">
+        <div class="chart-title" style="margin-bottom:4px">K-Means delivery clusters on map</div>
+        <div class="chart-sub">Explore delivery stops colored by cluster zone across five U.S. metros. Click any point for zone, city, and stop details. Built with Folium + Leaflet (<code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--copper)">aws_delivery_map.html</code>).</div>
+        <div class="map-legend">
+          <span class="map-legend-item"><span class="map-legend-dot" style="background:#e74c3c"></span>Zone 1 — Los Angeles</span>
+          <span class="map-legend-item"><span class="map-legend-dot" style="background:#3498db"></span>Zone 2 — Chicago</span>
+          <span class="map-legend-item"><span class="map-legend-dot" style="background:#2ecc71"></span>Zone 3 — Boston</span>
+          <span class="map-legend-item"><span class="map-legend-dot" style="background:#9b59b6"></span>Zone 4 — Seattle</span>
+          <span class="map-legend-item"><span class="map-legend-dot" style="background:#e67e22"></span>Zone 5 — Austin</span>
+        </div>
+        <div class="map-frame-wrap">
+          <iframe id="delivery-map-frame" src="aws_delivery_map.html" title="Amazon delivery stops — K-Means cluster map" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div><!-- /view-interactive -->
+
+    <!-- EXPORT -->
+    <div id="view-export" class="view-panel">
+    <h2 class="panel-heading">Export</h2>
+    <p class="panel-heading-desc">Print the full analysis or export raw metrics as JSON / CSV.</p>
+      <div class="section-label">Export report data</div>
+      <div class="chart-card">
+        <div class="chart-title" style="margin-bottom:4px">Download Hack Report</div>
+        <div class="chart-sub">Print saves all sections, charts, and insights. JSON/CSV include city-level metrics only.</div>
+        <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          <button class="export-btn" type="button" id="export-print">Print / Save as PDF</button>
+          <button class="export-btn secondary" type="button" id="export-json">Download JSON</button>
+          <button class="export-btn secondary" type="button" id="export-csv">Download CSV</button>
+        </div>
+        <div style="margin-top:16px;font-size:13px;color:var(--text2);line-height:1.65">Use Print → Save as PDF for a full report. JSON/CSV: 5 cities + global stats (898,415 stops, 6,112 routes, K=5, silhouette 0.96).</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var VIEW_META = {
+  dashboard: ['Last-Mile Route Optimization Analysis', 'Full Hack Report — scroll for all sections or use the sidebar to jump'],
+  routes: ['Routes', 'Data cleaning pipeline and stops-per-route distribution (6,112 routes)'],
+  emissions: ['Emissions', 'CO₂ per route by city — EPA SmartWay 0.21 kg/km'],
+  clustering: ['Clustering', 'K-Means K=5, silhouette 0.96, elbow method, and delivery zones'],
+  optimizer: ['Optimizer', 'What-if calculator — Boston vs Los Angeles efficiency'],
+  cities: ['Cities', 'Delivery volume, route distance, and city comparison table'],
+  insights: ['Insights', 'Key findings, recommendations, and Hack Report conclusions'],
+  interactive: ['Interactive App', 'K-Means cluster map — zoom, pan, and click delivery stops by zone'],
+  export: ['Export', 'Print report or download metrics as JSON / CSV']
+};
+
+function updatePageHeader(viewId) {
+  var meta = VIEW_META[viewId];
+  if (!meta) return;
+  document.getElementById('page-title').textContent = meta[0];
+  document.getElementById('page-desc').textContent = meta[1];
+}
+
+function bindSidebarScroll() {
+  var links = document.querySelectorAll('.sidebar a.nav-item[data-view]');
+  var panels = document.querySelectorAll('.view-panel');
+  var main = document.querySelector('.main');
+
+  links.forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      var viewId = link.getAttribute('data-view');
+      var target = document.getElementById('view-' + viewId);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      links.forEach(function (l) { l.classList.remove('active'); });
+      link.classList.add('active');
+      updatePageHeader(viewId);
+      if (typeof window.onViewChanged === 'function') {
+        setTimeout(function () { window.onViewChanged(viewId); }, 200);
+      }
+    });
+  });
+
+  if ('IntersectionObserver' in window && main) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var viewId = entry.target.id.replace('view-', '');
+          links.forEach(function (l) {
+            l.classList.toggle('active', l.getAttribute('data-view') === viewId);
+          });
+          updatePageHeader(viewId);
+        }
+      });
+    }, { root: main, rootMargin: '-30% 0px -55% 0px', threshold: 0.15 });
+    panels.forEach(function (p) { observer.observe(p); });
+  }
+
+  if (location.hash) {
+    var hashEl = document.querySelector(location.hash);
+    if (hashEl) setTimeout(function () { hashEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
+  }
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  html.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = current === 'dark' ? '☾' : '☀';
+  setTimeout(() => { destroyCharts(); buildAllCharts(); }, 50);
+}
+
+const REPORT_DATA = {
+  summary: { totalStops: 898415, totalRoutes: 6112, avgStopsPerRoute: 146.7, minStops: 32, maxStops: 237, stdDevStops: 31, optimalK: 5, silhouetteScore: 0.96, clusteringSample: 50000, co2FactorKgPerKm: 0.21 },
+  cities: [
+    { city: 'Los Angeles', stops: 411552, avgKm: 188.3, co2Kg: 39.5, status: 'Efficient' },
+    { city: 'Chicago', stops: 161408, avgKm: 283.9, co2Kg: 59.6, status: 'Inefficient' },
+    { city: 'Seattle', stops: 154702, avgKm: 196.2, co2Kg: 41.2, status: 'Efficient' },
+    { city: 'Boston', stops: 139693, avgKm: 298.8, co2Kg: 62.7, status: 'Inefficient' },
+    { city: 'Austin', stops: 31060, avgKm: 249.6, co2Kg: 52.4, status: 'Moderate' }
+  ]
+};
+
+function printReport() {
+  document.body.classList.add('pdf-export');
+  window.scrollTo(0, 0);
+  var mainEl = document.querySelector('.main');
+  if (mainEl) mainEl.scrollTop = 0;
+  window.print();
+  document.body.classList.remove('pdf-export');
+}
+
+function exportData(format) {
+  const name = 'hack-report-metrics';
+  if (format === 'json') {
+    const blob = new Blob([JSON.stringify(REPORT_DATA, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } else {
+    const rows = [['city','stops','avg_km','co2_kg','status'], ...REPORT_DATA.cities.map(c => [c.city, c.stops, c.avgKm, c.co2Kg, c.status])];
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+}
+
+function updateWhatIf(val) {
+  const pct = parseInt(val) / 100;
+  document.getElementById('opt-pct').textContent = val + '%';
+  document.getElementById('dist-saved').textContent = (110.5 * pct).toFixed(1) + ' km';
+  document.getElementById('co2-saved').textContent = (23.2 * pct).toFixed(1) + ' kg';
+  const annual = (23.2 * pct * 6112 / 1000).toFixed(1);
+  document.getElementById('annual-saved').textContent = annual + 'K kg';
+}
+
+let charts = {};
+const chartsBuilt = {};
+
+function getColors() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    grid: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)',
+    tick: dark ? '#5a5248' : '#9a8a78',
+    bg: dark ? '#100f0d' : '#ffffff',
+  };
+}
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => { if (c && c.destroy) c.destroy(); });
+  charts = {};
+  Object.keys(chartsBuilt).forEach(k => delete chartsBuilt[k]);
+}
+
+function ensureChartsForView(viewId) {
+  if (typeof Chart === 'undefined') return;
+  const map = {
+    dashboard: [],
+    cities: ['stops', 'dist'],
+    routes: ['distro'],
+    emissions: ['co2'],
+    clustering: ['sil', 'elbow'],
+    optimizer: [],
+    insights: [],
+    interactive: [],
+    export: []
+  };
+  const needed = map[viewId] || [];
+  needed.forEach(key => {
+    if (!chartsBuilt[key]) buildChart(key);
+  });
+}
+
+function buildAllCharts() {
+  ['stops', 'dist', 'co2', 'sil', 'elbow', 'distro'].forEach(buildChart);
+}
+
+function buildChart(key) {
+  if (chartsBuilt[key] || typeof Chart === 'undefined') return;
+  const el = document.getElementById(
+    key === 'stops' ? 'stopsChart' : key === 'dist' ? 'distChart' : key === 'co2' ? 'co2Chart' :
+    key === 'sil' ? 'silChart' : key === 'elbow' ? 'elbowChart' : key === 'distro' ? 'distroChart' : null
+  );
+  if (!el) return;
+  const c = getColors();
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    animation: { duration: 600 }
+  };
+  const scaleOpts = (yLabel) => ({
+    x: { ticks: { color: c.tick, font: { size: 11, family: 'JetBrains Mono' } }, grid: { display: false }, border: { display: false } },
+    y: { ticks: { color: c.tick, font: { size: 11, family: 'JetBrains Mono' }, callback: yLabel }, grid: { color: c.grid }, border: { display: false } }
+  });
+
+  if (key === 'stops') charts.stops = new Chart(el, {
+    type: 'bar',
+    data: {
+      labels: ['Los Angeles', 'Chicago', 'Seattle', 'Boston', 'Austin'],
+      datasets: [{ data: [411552, 161408, 154702, 139693, 31060], backgroundColor: ['#b87333','#7ab0d4','#5cb88a','#d4a96a','#a89880'], borderRadius: 5, borderSkipped: false }]
+    },
+    options: { ...baseOpts, scales: { ...scaleOpts(v => v >= 1000 ? Math.round(v/1000)+'k' : v), x: { ticks: { color: c.tick, font: { size: 10, family: 'Inter' }, maxRotation: 0 }, grid: { display: false }, border: { display: false } } } }
+  });
+  else if (key === 'dist') charts.dist = new Chart(el, {
+    type: 'bar',
+    data: {
+      labels: ['LA', 'Seattle', 'Austin', 'Chicago', 'Boston'],
+      datasets: [{ data: [188.3, 196.2, 249.6, 283.9, 298.8], backgroundColor: ['#5cb88a','#5cb88a','#d4a96a','#d97070','#d97070'], borderRadius: 5, borderSkipped: false }]
+    },
+    options: { ...baseOpts, scales: { ...scaleOpts(v => v+'km'), x: { ticks: { color: c.tick, font: { size: 11, family: 'JetBrains Mono' }, maxRotation: 0 }, grid: { display: false }, border: { display: false } }, y: { ...scaleOpts(v => v+'km').y, min: 0, max: 340 } } }
+  });
+  else if (key === 'co2') charts.co2 = new Chart(el, {
+    type: 'bar',
+    data: {
+      labels: ['Los Angeles', 'Seattle', 'Austin', 'Chicago', 'Boston'],
+      datasets: [{ data: [39.5, 41.2, 52.4, 59.6, 62.7], backgroundColor: ['#5cb88a','#7ab0d4','#d4a96a','#d97070','#d97070'], borderRadius: 5, borderSkipped: false }]
+    },
+    options: { ...baseOpts, scales: { ...scaleOpts(v => v+' kg'), x: { ticks: { color: c.tick, font: { size: 10, family: 'Inter' }, maxRotation: 0 }, grid: { display: false }, border: { display: false } }, y: { ...scaleOpts(v => v+' kg').y, min: 0, max: 75 } } }
+  });
+  else if (key === 'elbow') charts.elbow = new Chart(el, {
+    type: 'line',
+    data: {
+      labels: ['K=2','K=3','K=4','K=5','K=6','K=7','K=8','K=9','K=10'],
+      datasets: [{
+        data: [4200, 2100, 980, 520, 480, 455, 438, 425, 415],
+        borderColor: '#7ab0d4',
+        backgroundColor: 'rgba(122,176,212,0.08)',
+        pointBackgroundColor: ['#5a5248','#5a5248','#5a5248','#b87333','#5a5248','#5a5248','#5a5248','#5a5248','#5a5248'],
+        pointBorderColor: ['#5a5248','#5a5248','#5a5248','#b87333','#5a5248','#5a5248','#5a5248','#5a5248','#5a5248'],
+        pointRadius: [4,4,4,8,4,4,4,4,4],
+        fill: true, tension: 0.35, borderWidth: 2
+      }]
+    },
+    options: { ...baseOpts, scales: { ...scaleOpts(v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v), x: { ticks: { color: c.tick, font: { size: 11, family: 'JetBrains Mono' }, maxRotation: 0 }, grid: { display: false }, border: { display: false } }, y: { ...scaleOpts(v => v >= 1000 ? Math.round(v/1000)+'k' : v).y, min: 0 } } }
+  });
+  else if (key === 'sil') charts.sil = new Chart(el, {
+    type: 'line',
+    data: {
+      labels: ['K=2','K=3','K=4','K=5','K=6','K=7','K=8','K=9','K=10'],
+      datasets: [{
+        data: [0.71, 0.88, 0.89, 0.96, 0.65, 0.62, 0.61, 0.61, 0.61],
+        borderColor: '#b87333', backgroundColor: 'rgba(184,115,51,0.08)',
+        pointBackgroundColor: ['#5a5248','#5a5248','#5a5248','#5cb88a','#5a5248','#5a5248','#5a5248','#5a5248','#5a5248'],
+        pointBorderColor: ['#5a5248','#5a5248','#5a5248','#5cb88a','#5a5248','#5a5248','#5a5248','#5a5248','#5a5248'],
+        pointRadius: [4,4,4,8,4,4,4,4,4],
+        fill: true, tension: 0.35, borderWidth: 2
+      }]
+    },
+    options: { ...baseOpts, scales: { ...scaleOpts(v => v.toFixed(2)), x: { ticks: { color: c.tick, font: { size: 11, family: 'JetBrains Mono' }, maxRotation: 0 }, grid: { display: false }, border: { display: false } }, y: { ...scaleOpts(v => v.toFixed(2)).y, min: 0.5, max: 1.0 } } }
+  });
+  else if (key === 'distro') {
+  const bellData = [];
+  const bellLabels = [];
+  for (let x = 40; x <= 237; x += 10) {
+    bellLabels.push(x);
+    const val = 620 * Math.exp(-0.5 * Math.pow((x - 146.7) / 31, 2));
+    bellData.push(Math.round(val));
+  }
+  charts.distro = new Chart(el, {
+    type: 'bar',
+    data: {
+      labels: bellLabels,
+      datasets: [{ data: bellData, backgroundColor: bellLabels.map(x => Math.abs(x - 146.7) < 16 ? '#b87333' : 'rgba(184,115,51,0.3)'), borderRadius: 2, borderSkipped: false, barPercentage: 0.95, categoryPercentage: 0.95 }]
+    },
+    options: { ...baseOpts, scales: { x: { ticks: { color: c.tick, font: { size: 10, family: 'JetBrains Mono' }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }, grid: { display: false }, border: { display: false } }, y: { ticks: { color: c.tick, font: { size: 11, family: 'JetBrains Mono' } }, grid: { color: c.grid }, border: { display: false } } },
+      plugins: { legend: { display: false }, annotation: {} }
+    }
+  });
+  }
+  chartsBuilt[key] = true;
+}
+
+function buildCharts() {
+  ['stops','dist','co2','sil','elbow','distro'].forEach(buildChart);
+}
+
+window.onViewChanged = function (viewId) {
+  try { ensureChartsForView(viewId); } catch (e) { /* optional */ }
+  Object.values(charts).forEach(c => { if (c && c.resize) c.resize(); });
+};
+
+function initApp() {
+  bindSidebarScroll();
+  var themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+
+  var slider = document.getElementById('opt-slider');
+  if (slider) slider.addEventListener('input', function () { updateWhatIf(this.value); });
+
+  var exportPrintBtn = document.getElementById('export-print');
+  var exportJson = document.getElementById('export-json');
+  var exportCsv = document.getElementById('export-csv');
+  if (exportPrintBtn) exportPrintBtn.addEventListener('click', printReport);
+  if (exportJson) exportJson.addEventListener('click', function () { exportData('json'); });
+  if (exportCsv) exportCsv.addEventListener('click', function () { exportData('csv'); });
+
+  try { buildAllCharts(); } catch (e) { /* Chart.js may load late */ }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+</script>
+</body>
+</html>
